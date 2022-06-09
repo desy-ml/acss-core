@@ -15,25 +15,8 @@ Clone the acss-services repository.
 git clone https://github.com/desy-ml/ml-pipe-services
 ```
 
-## Build Docker images
-Open the root folder of the accs-core project:
-```
-cd /path/to/project
-```
-
-To build all docker images run:
-```bash
-make build-all
-``` 
-This can take a while...
-
-Notes: After changing code you just need to rebuild the service images, which is much faster.
-```
-make build-service-images
-```
-
-## Start Core Services
-To Start the core services of ACSS you need to set the following environment values in a .env file.
+## Configure Core Services
+To install the core services of ACSS you need to set the following environment values in a .env file.
 ```
 ACSS_EXTERNAL_HOST_ADDR=localhost
 ACSS_DB_PW=xxxx
@@ -67,6 +50,24 @@ msg_bus:
 
 In production replace ACSS_EXTERNAL_HOST_ADDR=localhost with the server url and set PATH_TO_ACSS_SERVICES_ROOT to the location of the cloned ml-pipe-services repository.
 The environment values ACSS_DB_PW and ACSS_DB_USER define the credentials for the databases used by ACSS.
+
+
+## Build Docker images
+Open the root folder of the acss-core project:
+```
+cd /path/to/project
+```
+
+To build all docker images run:
+```bash
+make build-all
+``` 
+This can take a while...
+
+Notes: After changing code you just need to rebuild the service images, which is much faster.
+```
+make build-service-images
+```
 
 You can check if all core services are started correctly by executing:
 
