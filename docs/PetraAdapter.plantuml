@@ -1,0 +1,15 @@
+@startuml
+
+[Service 1] ..> PetraApdapter : use
+[Service 2] ..> PetraApdapter : use
+[Simulation 1] ..> PetraApdapter : use
+[Simulation 2] ..> PetraApdapter : use
+
+database "MySql" {
+    [sim_db]
+    PetraApdapter -down- [sim_db]
+}
+
+PetraApdapter -down- [real machine]
+
+@enduml

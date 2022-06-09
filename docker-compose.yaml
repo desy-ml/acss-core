@@ -1,0 +1,646 @@
+version: "3"
+
+services:
+
+  zookeeper:
+    image: acss/zookeeper:3.7.0
+    container_name: zookeeper
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    profiles:
+      - core
+    networks:
+      - pipenetwork
+
+  kafka_1:
+    image: acss/kafka-broker:1.0.0
+    container_name: kafka_1
+    hostname: kafka_1
+    depends_on:
+      - zookeeper
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka_1:9092,OUTSIDE://${ACSS_EXTERNAL_HOST_ADDR}:9094
+      KAFKA_LISTENERS: INSIDE://kafka_1:9092,OUTSIDE://kafka_1:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 52428800
+      KAFKA_MESSAGE_MAX_BYTES: 52428800
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    profiles:
+      - core
+    networks:
+      - pipenetwork
+
+  kafka_2:
+    image: acss/kafka-broker:1.0.0
+    container_name: kafka_2
+    hostname: kafka_2
+    depends_on:
+      - zookeeper
+    ports:
+      - "9096:9096"
+      - "29096:29096"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka_2:9092,OUTSIDE://${ACSS_EXTERNAL_HOST_ADDR}:9096
+      KAFKA_LISTENERS: INSIDE://kafka_2:9092,OUTSIDE://kafka_2:9096
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 52428800
+      KAFKA_MESSAGE_MAX_BYTES: 52428800
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    profiles:
+      - core
+    networks:
+      - pipenetwork
+
+  create_topics_job:
+    image: acss/core_service
+    container_name: create_topics_job
+    hostname: create_topics_job
+    depends_on:
+      - kafka_1
+      - kafka_2
+    #      - logstash
+    environment:
+      PYTHONPATH: /pipe
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+    volumes:
+      - "/tmp/:/tmp/"
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - create_topics.py
+    profiles:
+      - core
+    networks:
+      - pipenetwork
+
+  old_agent:
+    image: acss/service
+    container_name: old_agent
+    hostname: old_agent
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - agents/orbit_old/orbit_agent.py
+    profiles:
+      - testing
+    networks:
+      - pipenetwork
+
+  silly_agent_callback:
+    image: acss/service
+    container_name: silly_agent_callback
+    hostname: silly_agent_callback
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - agents/testing/silly_agent_callback.py
+    profiles:
+      - silly
+    networks:
+      - pipenetwork
+
+  silly_agent:
+    image: acss/service
+    container_name: silly_agent
+    hostname: silly_agent
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - agents/testing/silly_agent.py
+    profiles:
+      - testing
+    networks:
+      - pipenetwork
+
+  silly_measure_agent:
+    image: acss/service
+    container_name: silly_measure_agent
+    hostname: silly_measure_agent
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - agents/testing/silly_measure_agent.py
+    profiles:
+      - testing
+    networks:
+      - pipenetwork
+
+  set_table_service:
+    image: acss/service
+    container_name: set_table_service
+    hostname: set_table_service
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      SERVICE_NAME: "set_table_service" # default name for testing
+      SERVICE_MODE: "sim" # default mode for testing
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - agents/testing/set_table_service.py
+    profiles:
+      - testing
+      - silly
+    networks:
+      - pipenetwork
+
+  machine:
+    image: acss/service
+    container_name: machine
+    hostname: machine
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - machine/PetraSimMachine.py
+    profiles:
+      - at
+      - simulation
+    networks:
+      - pipenetwork
+
+  simulation:
+    image: acss/service
+    container_name: simulation
+    hostname: simulation
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - simulations/orbit/PetraOrbitSimulation.py
+    profiles:
+      - at
+      - simulation
+    networks:
+      - pipenetwork
+
+  timed_silly_simulation:
+    image: acss/service
+    container_name: timed_silly_simulation
+    hostname: timed_silly_simulation
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - simulations/testing/TimedSillySimulation.py
+    profiles:
+      - silly
+    networks:
+      - pipenetwork
+
+  silly_simulation:
+    image: acss/service
+    container_name: silly_simulation
+    hostname: silly_simulation
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - simulations/testing/SillySimulation.py
+    profiles:
+      - silly
+    networks:
+      - pipenetwork
+
+  test_api:
+    image: acss/test
+    container_name: test_api
+    hostname: test_api
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/ocelot:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "/tmp/:/tmp/"
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    profiles:
+      - testing
+    networks:
+      - pipenetwork
+
+  simulation_database:
+    image: mysql
+    container_name: simulation_database
+    hostname: simulation_database
+    restart: always
+    ports:
+      - 3306:3306
+    profiles:
+      - simulation
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ACSS_DB_PW}
+      MYSQL_DATABASE: sim_db
+    networks:
+      - pipenetwork
+
+  fill_sim_db_job:
+    image: acss/core_service
+    container_name: fill_sim_db_job
+    hostname: fill_sim_db_job
+    depends_on:
+      - simulation_database
+    profiles:
+      - simulation
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: /pipe/acss_service/
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - fill_sql_sim_db.py
+    networks:
+      - pipenetwork
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    hostname: phpmyadmin
+    depends_on:
+      - simulation_database
+    restart: always
+    ports:
+      - 8088:80
+    environment:
+      PMA_HOST: simulation_database
+      MYSQL_ROOT_PASSWORD: ${ACSS_DB_PW}
+    profiles:
+      - testing
+      - simulation
+    networks:
+      - pipenetwork
+
+  orb_cor_agent:
+    image: acss/service
+    container_name: orb_cor_agent
+    hostname: orb_cor_agent
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+      SERVICE_NAME: "orbit_corr_agent" # default name for testing
+      SERVICE_MODE: "sim" # default mode for testing  
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - agents/orbit/orbit_corr_agent.py
+    profiles:
+      - testing
+      - prod
+    networks:
+      - pipenetwork
+
+  config_to_file_1:
+    image: acss/service
+    container_name: config_to_file_1
+    hostname: config_to_file_1
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+      SERVICE_NAME: "config_to_file_1" # default name for testing
+      SERVICE_MODE: "sim" # default mode for testing  
+    volumes:
+      - /tmp/:/tmp/
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - agents/testing/config_to_file_service.py
+    profiles:
+      - testing
+    networks:
+      - pipenetwork
+
+  config_to_file_2:
+    image: acss/service
+    container_name: config_to_file_2
+    hostname: config_to_file_2
+    depends_on:
+      - create_topics_job
+      - register
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+      SERVICE_NAME: "config_to_file_2" # default name for testing
+      SERVICE_MODE: "sim" # default mode for testing  
+    volumes:
+      - /tmp/:/tmp/
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - agents/testing/config_to_file_service.py
+    profiles:
+      - testing
+    networks:
+      - pipenetwork
+
+  # elasticsearch:
+  #   image: elasticsearch:7.16.2
+  #   container_name: elasticsearch
+  #   hostname: elasticsearch
+  #   profiles:
+  #     - core
+  #   environment:
+  #     - "discovery.type=single-node"
+  #   ports:
+  #     - 9200:9200
+  #     - 9300:9300
+  #   networks:
+  #     - pipenetwork
+  # kibana:
+  #   image: kibana:7.16.2
+  #   container_name: kibana
+  #   hostname: kibana
+  #   profiles:
+  #     - core
+  #   ports:
+  #     - 5601:5601
+  #   links:
+  #     - elasticsearch:elasticsearch
+  #   depends_on:
+  #     - elasticsearch
+  #   networks:
+  #     - pipenetwork
+  # logstash:
+  #   image: logstash:7.16.2
+  #   container_name: logstash
+  #   hostname: logstash
+  #   profiles:
+  #     - core
+  #   ports:
+  #     - 9600:9600
+  #     - 8089:8089
+  #   volumes:
+  #     - ./logstash:/usr/share/logstash/pipeline/
+  #   links:
+  #     - elasticsearch:elasticsearch
+  #   depends_on:
+  #     - elasticsearch
+  #   networks:
+  #     - pipenetwork
+
+  http_proxy:
+    image: acss/http_iface
+    container_name: http_proxy
+    hostname: http_proxy
+    depends_on:
+      - create_topics_job
+      - register
+      - kafka_1
+      - kafka_2
+    ports:
+      - 5002:5002
+    environment:
+      PYTHONPATH: /pipe:/pipe/acss_service/
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      ACSS_CONFIG_FILEPATH_HOST: ${ACSS_CONFIG_FILEPATH}
+      PATH_TO_ACSS_SERVICES_ROOT: ${PATH_TO_ACSS_SERVICES_ROOT} #needed because http_proxy can start services
+    profiles:
+      - core
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+      - "${PATH_TO_ACSS_SERVICES_ROOT}/:/pipe/acss_service/"
+    networks:
+      - pipenetwork
+    working_dir: /pipe/acss_service/
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - /pipe/src/console/http_server.py
+
+  observer:
+    image: acss/http_iface
+    container_name: observer
+    hostname: observer
+    depends_on:
+      - observer_database
+    #      - logstash
+    ports:
+      - 5003:5003
+    environment:
+      PYTHONPATH: /pipe
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+    profiles:
+      - core
+    networks:
+      - pipenetwork
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - src/observer/observer_frontend.py
+
+  observer_backend:
+    image: acss/core_service
+    container_name: observer_backend
+    hostname: observer_backend
+    depends_on:
+      - create_topics_job
+      - register
+      - observer_database
+    environment:
+      PYTHONPATH: /pipe
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+      PATH_TO_ACSS_SERVICES_ROOT: "/pipe/acss_service/"
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - src/observer/observer.py
+    profiles:
+      - core
+    networks:
+      - pipenetwork
+
+  observer_database:
+    image: mongo
+    container_name: observer_database
+    hostname: observer_database
+    restart: always
+    #    ports:
+    #      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${ACSS_DB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${ACSS_DB_PW}
+    profiles:
+      - core
+    networks:
+      - pipenetwork
+
+  register:
+    image: acss/http_iface
+    container_name: register
+    hostname: register
+    depends_on:
+      - create_topics_job
+      - register_database
+    ports:
+      - 5004:5004
+    environment:
+      PYTHONPATH: /pipe
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+    profiles:
+      - core
+    networks:
+      - pipenetwork
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - src/register/register_frontend.py
+
+  register_backend:
+    image: acss/core_service
+    container_name: register_backend
+    hostname: register_backend
+    depends_on:
+      - create_topics_job
+      - register
+      - register_database
+    environment:
+      PYTHONPATH: /pipe
+      ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
+    volumes:
+      - "${ACSS_CONFIG_FILEPATH}:/pipe/acss-config.yaml"
+    entrypoint:
+      - /pipe/.venv/bin/python
+      - src/register/register_service.py
+    profiles:
+      - core
+    networks:
+      - pipenetwork
+
+  register_database:
+    image: mariadb
+    container_name: register_database
+    hostname: register_database
+    restart: always
+    profiles:
+      - core
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ACSS_DB_PW}
+      MYSQL_DATABASE: services
+    networks:
+      - pipenetwork
+
+  react-app:
+    build:
+      context: .
+      dockerfile: ./docker/react.Dockerfile
+    profiles:
+      - core
+    ports:
+      - "8080:80"
+    networks:
+      - pipenetwork
+
+networks:
+  pipenetwork:
+    driver: bridge

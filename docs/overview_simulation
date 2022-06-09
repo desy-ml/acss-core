@@ -1,0 +1,19 @@
+@startuml
+package "Host" {
+  [docker-compose]
+  interface "docker compose cli" as cli
+  interface "REST" as rest
+  package "Docker Compose Cluster" as compose {
+    [Service 1]
+    [Service 2]
+    [docker-compose] ...> [Service 1]: start/stop
+    [docker-compose] ...> [Service 2]: start/stop
+    [docker-compose] ...> [REST API Server]: start/stop
+    rest -down- [REST API Server]
+  }
+}
+[docker-compose] - cli
+:User: --> cli
+:User: -> rest
+
+@enduml

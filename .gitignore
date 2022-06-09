@@ -1,0 +1,11 @@
+__pycache__
+.idea
+.vscode
+.ipynb_checkpoints
+logs/*
+.venv
+*.pyc
+*.ipynb
+/dist
+/build
+.env*

@@ -1,0 +1,30 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "*"
+Jinja2 = "*"
+pylint = "*"
+matplotlib = "*"
+accelerator-toolbox = "*"
+
+[packages]
+numpy = "*"
+confluent-kafka = "*"
+dacite = "*"
+Flask = "*"
+requests = "*"
+scipy = "*"
+mysql-connector-python = "*"
+python-logstash = "*"
+PyYAML = "*"
+pymongo = "*"
+Flask-MySQL = "*"
+install = "*"
+cryptography = "*"
+Flask-PyMongo = "*"
+
+[requires]
+python_version = "3.8"

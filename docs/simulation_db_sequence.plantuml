@@ -1,0 +1,22 @@
+@startuml
+simulation -> PetraSimulationAdpater ** : create
+simulation -> simulation ++: init_local()
+PetraSimulationAdpater -> MySQL: connect()
+PetraSimulationAdpater <-- MySQL
+
+database MySQL
+
+Event_bus -> simulation ++: table_updated_event
+simulation -> PetraSimulationAdpater ++: get_data
+PetraSimulationAdpater -> MySQL ++: SELECT 
+PetraSimulationAdpater <-- MySQL --
+PetraSimulationAdpater --> simulation --
+simulation -> simulation: update() 
+simulation -> PetraSimulationAdpater ++: set_hcor
+PetraSimulationAdpater -> MySQL ++: INSERT 
+PetraSimulationAdpater <-- MySQL --
+PetraSimulationAdpater -> Event_bus: table_updated_event
+PetraSimulationAdpater --> simulation --
+
+
+@enduml

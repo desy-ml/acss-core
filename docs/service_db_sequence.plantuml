@@ -1,0 +1,24 @@
+@startuml
+service -> PetraSimulationAdpater ** : create
+service -> service ++: init_local()
+PetraSimulationAdpater -> MySQL: connect()
+PetraSimulationAdpater <-- MySQL
+
+database MySQL
+actor User
+
+User -> PipeClient ++ : observe()
+
+PipeClient -> http_server ++: GET REQUEST
+
+http_server -> service ++: observe_event
+
+service -> PetraSimulationAdpater ++: get_hcor
+PetraSimulationAdpater -> MySQL ++: SELECT 
+PetraSimulationAdpater <- MySQL --: result
+PetraSimulationAdpater -> service --: result
+service -> http_server --: observed_event
+http_server -> PipeClient --: result
+PipeClient -> User --: result
+
+@enduml

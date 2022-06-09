@@ -1,0 +1,15 @@
+name: pipe_env
+channels:
+  - conda-forge
+dependencies:
+  - numpy
+#  - python-confluent-kafka
+  - dacite
+  - numba
+  - numexpr
+#  - pyfftw
+  - flask
+  - requests
+  - scipy
+  - pytest
+  - python>=3.6.*
