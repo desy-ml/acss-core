@@ -295,9 +295,9 @@ services:
     image: acss/test
     container_name: test_api
     hostname: test_api
-    depends_on:
-      - create_topics_job
-      - register
+#    depends_on:
+#      - create_topics_job
+#      - register
     environment:
       PYTHONPATH: /pipe:/ocelot:/pipe/acss_service/
       ACSS_CONFIG_FILEPATH: /pipe/acss-config.yaml
@@ -312,7 +312,7 @@ services:
       - pipenetwork
 
   simulation_database:
-    image: mysql
+    image: mariadb
     container_name: simulation_database
     hostname: simulation_database
     restart: always
