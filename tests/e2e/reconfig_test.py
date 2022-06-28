@@ -35,14 +35,15 @@ def test_reconfig_multiple_times():
         agents, _ = get_services()
 
         agents['SetTableService'].run(params={'data': [{'names': hcor_names,  'values': hcor_val, 'type': 'hcor'}]},
-                                      wait_for_sims=['PetraOrbitSimulation'])
+                                      wait_for_sims=['MachineService'])
+
 
         for val in adapter.get_hcors(hcor_names):
             assert val == 1.0
 
         # 2. set correctors to 2.0 via agent trigger
         agents['SillyAgent'].reconfig({'factor': 2}, sync=True)
-        agents['SillyAgent'].run(wait_for_sims=['PetraOrbitSimulation'])
+        agents['SillyAgent'].run(wait_for_sims=['MachineService'])
 
         for val, name in zip(adapter.get_hcors(hcor_names), hcor_names):
             if not name.startswith(('PKPDA', 'PKPDD')):
@@ -52,7 +53,8 @@ def test_reconfig_multiple_times():
 
         # 3. set correctors to 8.0 via agent trigger
         agents['SillyAgent'].reconfig({'factor': 4}, sync=True)
-        agents['SillyAgent'].run(wait_for_sims=['PetraOrbitSimulation'])
+        agents['SillyAgent'].run(wait_for_sims=['MachineService'])
+
 
         for val, name in zip(adapter.get_hcors(hcor_names), hcor_names):
             if not name.startswith('PKPDA') and not name.startswith('PKPDD'):
