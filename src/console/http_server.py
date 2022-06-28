@@ -24,7 +24,6 @@ def create_app():
 
 
 app = create_app()
-pipe_client = KafkaPipeClient()
 
 global compose_client
 compose_client = DockerComposeClient(64)
@@ -64,7 +63,7 @@ def stop_service(name):
     if request.method == "OPTIONS":  # CORS preflight
         return _build_cors_prelight_response()
     else:
-        pipe_client.stop_service(name)
+        KafkaPipeClient().stop_service(name)
 
         return '', http.HTTPStatus.OK, {'Content-Type': 'application/json; charset=utf-8', "Access-Control-Allow-Origin": "*"}
 
@@ -74,7 +73,7 @@ def get_running_services():
     if request.method == "OPTIONS":  # CORS preflight
         return _build_cors_prelight_response()
     else:
-        res = pipe_client.get_running_service_info()
+        res = KafkaPipeClient().get_running_service_info()
         return {'services': res}, http.HTTPStatus.OK, {'Content-Type': 'application/json; charset=utf-8', "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "*"}
 
 
