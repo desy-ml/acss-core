@@ -1,6 +1,7 @@
 FROM acss/acss-base:latest as build-python-env
 
 #build python env
+RUN apt-get update && apt-get install -y build-essential
 RUN mkdir -p /pipe
 COPY Pipfile /pipe
 COPY Pipfile.lock /pipe

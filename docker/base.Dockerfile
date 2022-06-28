@@ -15,7 +15,10 @@ ENV PIP_NO_CACHE_DIR=off
 
 COPY --from=build /usr/local/lib/pkgconfig /usr/local/lib/pkgconfig
 COPY --from=build /usr/local/lib/librdkafka* /usr/local/lib/
+COPY --from=build /usr/local/include/librdkafka* /usr/local/include/librdkafka
 ENV LD_LIBRARY_PATH=/usr/local/lib/:${LD_LIBRARY_PATH}
+ENV C_INCLUDE_PATH=/usr/local/include/
+ENV CPLUS_INCLUDE_PATH=/usr/local/include/
 
 
 
