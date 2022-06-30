@@ -33,14 +33,14 @@ observer:
   url: observer:5003
   event_db_pw: xxxx
   # event_db_url:
-  event_db_usr: xxxx
+  event_db_usr: root
 register:
   # registers all services
   url: register:5004
 simulation:
   # sql database which maps the machine parameter
   sim_db_pw: xxxx
-  sim_db_usr: xxxx
+  sim_db_usr: root
   sim_db_url: simulation_database:3306
 msg_bus:
   # message bus
