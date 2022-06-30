@@ -6,7 +6,7 @@ from ..logger import init_logger
 from ..topics import SIMULATION_EVENTS
 from ..messages.message import Headers
 from ..messages.update_message_types import UpdateMessage
-from src.acss_core.event_utls.consumer import consume
+from ..event_utls.consumer import consume
 from ..utils.TimerThread import TimerThread
 
 _logger = init_logger(__name__)
